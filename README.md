@@ -8,7 +8,7 @@ A basic client for LBRY and Odysee! Still kind of early in development, so it do
 
 ### Linux
 
-1) Download the latest release [here]().
+1) Download the latest release [here](https://github.com/AprilDolly/qlbry/releases/tag/stuff).
 
 2) In a terminal, type `chmod +x qlbry.AppImage`
 
