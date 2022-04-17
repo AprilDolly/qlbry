@@ -1,7 +1,4 @@
 # qlbry
-A basic client for LBRY and Odysee
-
-# qlbry
 A basic client for LBRY and Odysee! Still kind of early in development, so it doesn't have too many features yet
 
 ## Usage
