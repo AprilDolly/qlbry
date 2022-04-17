@@ -14,3 +14,11 @@ A basic client for LBRY and Odysee! Still kind of early in development, so it do
 ### Windows
 
 Will come soon. For now, you will have to download python and manually install the dependencies, I'm afraid :c
+
+### Using from source
+
+1) run `git clone https://github.com/AprilDolly/qlbry.git`
+2) run `cd qlbry`
+3) run `pip3 install -r requirements` (use pip instead of pip3 if python3 is your only python installation and this doesn't work)
+4) [Download the latest lbrynet executable](https://github.com/lbryio/lbry-sdk/releases) if it is not already installed, then place the "lbrynet" file in the qlbry directory or add it to your system's PATH variable.
+5) run `python3 -m qlbry.py` to start the client.
