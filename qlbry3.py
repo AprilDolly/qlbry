@@ -11,6 +11,8 @@ import urllib
 import sys
 import _thread as thread
 import numpy as np
+import os
+
 def nothing(*args):
 	pass
 
@@ -425,7 +427,11 @@ class LBRYClient(QMainWindow):
 		self.claim_container.show()
 		
 if __name__=="__main__":
+	if "APPDIR" in os.environ.keys():
+		lbrynet_name=lbrynet_name="{}/lbrynet".format(os.environ["APPDIR"])
+	else:
+		lbrynet_name="lbrynet"
 	app=QApplication(sys.argv)
-	window=LBRYClient()
+	window=LBRYClient(lbrynet_name)
 	window.show()
 	app.exec_()
