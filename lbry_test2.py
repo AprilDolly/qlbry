@@ -4,6 +4,7 @@ import requests
 import subprocess
 from subprocess import DEVNULL,PIPE
 import json
+from json.decoder import JSONDecodeError
 import random
 
 class Account:
@@ -67,8 +68,11 @@ class Claim(dict):
 	def get_channel(self):
 		if "signing_channel" in self.keys():
 			if type(self["signing_channel"])==dict:
-				sc_dict=self["signing_channel"]
-				self["signing_channel"]=Claim(sc_dict["claim_id"],sc_dict["name"],self.lbry,dic=sc_dict)
+				try:
+					sc_dict=self["signing_channel"]
+					self["signing_channel"]=Claim(sc_dict["claim_id"],sc_dict["name"],self.lbry,dic=sc_dict)
+				except KeyError:
+					pass
 	def resolve(self):
 		if self._resolved:
 			return
@@ -157,7 +161,10 @@ class LBRY:
 		args=[self.lbrynet_name]+list(args)+args_list
 		cmd_process=subprocess.Popen(args,stdout=PIPE,stderr=PIPE)
 		out=cmd_process.stdout.read().decode('utf-8')
-		return json.loads(out)
+		try:
+			return json.loads(out)
+		except JSONDecodeError:
+			return out
 		
 	def get_accounts(self):
 		accounts=[]
@@ -165,7 +172,6 @@ class LBRY:
 		for acc in accounts_json['items']:
 			accounts.append(Account(acc,self))
 	def resolve(self,claim_name):
-		print("resolving crap")
 		if self.lbrynet_exists:
 			return self.lbrynet_command("resolve",claim_name)
 		else:
@@ -178,12 +184,16 @@ class LBRY:
 			for c in claims:
 				#print(c)
 				names.append(c["name"])
+			
 			resolved=self.lbrynet_command("resolve",args_list=names)
-			for k in resolved.keys():
-				for c in claims:
-					if c["name"] in k:
-						self.resolved_claim_data[c["name"]]=resolved[k]
-						break
+			try:
+				for k in resolved.keys():
+					for c in claims:
+						if c["name"] in k:
+							self.resolved_claim_data[c["name"]]=resolved[k]
+							break
+			except AttributeError:
+				pass
 			#print(self.resolved_claim_data)
 		else:
 			claim_urls=[]
@@ -200,9 +210,26 @@ class LBRY:
 					results_resolved.append(Claim("","",self,dic=self.resolved_claim_data[k]))
 					break
 		return results_resolved
-			
+	def search_continuously(self,query,mode="odysee",size=20):
+		for r in self.search(query,mode=mode,size=size,offset=0):
+			yield r
+		i_offset=1
+		while True:
+			#do stuff
+			results=self.search(query,mode=mode,size=size,offset=i_offset*size)
+			#print(len(results))
+			if len(results)==0:
+				break
+			elif type(results)==str:
+				print("RESULTS ARE str:",results)
+			else:
+				for r in results:
+					yield r
+			i_offset+=1
+		
+	
 	def search(self,query,mode='odysee',size=20,offset=0,nsfw=False,resolve_results=True,**kwargs):
-		print("searching for:{}".format(query))
+		#print("searching for:{}".format(query))
 		if mode=='lbry' and self.lbrynet_exists:
 			r_json=self.lbrynet_command('claim','search',query)
 			results=[]
@@ -216,6 +243,7 @@ class LBRY:
 			else:
 				nsfw='false'
 			r=requests.get('https://lighthouse.odysee.com/search?s={}&size={}&from={}&nsfw={}'.format(query,size,offset,nsfw))
+			print(len(r.json()))
 			results=[]
 			for j in json.loads(r.text):
 				#print(r.text)
@@ -230,5 +258,7 @@ class LBRY:
 if __name__=='__main__':
 	lbry=LBRY(lbrynet_name="lbrynet")
 	lbry.test_lbrynet()
-	for item in lbry.get_channel_claims("@aprildolly"):
-		print(item)
+	for r in lbry.search_continuously("reallygraceful"):
+		pass#print(r["name"])
+		
+	

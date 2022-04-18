@@ -334,7 +334,7 @@ class LBRYClient(QMainWindow):
 	def clean_up_widgets(self):
 		#clean up any widgets and threads from earlier tasks
 		try:
-			self.search_thread.exit()
+			self.search_thread.is_running=False
 			self.search_thread.wait()
 		except AttributeError:
 			pass
@@ -377,34 +377,34 @@ class LBRYClient(QMainWindow):
 			pass
 	def search(self):
 		self.clean_up_widgets()
+		
+		#Initialize widgets used to display search results
+		self.content_area_container=QWidget()
+		self.content_area_layout=QGridLayout()
+		self.content_area_container.setLayout(self.content_area_layout)
+		self.content_area.setWidget(self.content_area_container)
+		self.result_widgets=[]
+		
+		#start the search thread
 		self.current_query=self.search_field.text()
-		self.search_thread=FunctionAsQThread(self.threaded_search,self.current_query,parent=self)
-		self.search_thread.function_complete.connect(self.render_search_results)
+		self.search_thread=IteratorAsQThread(self.threaded_search,self.current_query,parent=self)
+		self.search_thread.iterate.connect(self.render_search_results)
 		self.search_thread.start()
 	def threaded_search(self,query):
 		print("started search")
 		#do actual searching
-		claims=self.lbry.search(query)
+		for claim in self.lbry.search_continuously(query):
+			yield claim
 		print("end search")
-		return claims
-	def render_search_results(self,results):
-		#generate search result widgets from each claim, add them to scroll area
-		claims,=results
-		self.result_widgets=[]
-		self.content_area_container=QWidget()
-		content_area_layout=QGridLayout()
-		self.content_area_container.setLayout(content_area_layout)
-		self.content_area.setWidget(self.content_area_container)
-		for i,claim in enumerate(claims):
-			print("adding")
+	def render_search_results(self,claim,*args):
+		claim,=claim
+		try:
 			w=SearchResultWidget(claim,self.content_area_container)
 			w.clicked.connect(NotAFunction(self.navigate_to_claim,claim))
 			self.result_widgets.append(w)
-			content_area_layout.addWidget(w,i,0)
-		print("search results rendered")
-		
-		
-
+			self.content_area_layout.addWidget(w)
+		except KeyError:
+			pass
 	def navigate_to_claim(self,*args):
 		claim=args[0]
 		self.clean_up_widgets()
@@ -415,6 +415,9 @@ class LBRYClient(QMainWindow):
 			self.stream_player=StreamPlayerWidget(claim)
 			self.stream_player.setSizePolicy(QSizePolicy.Minimum,QSizePolicy.Expanding)
 			claim_container_layout.addWidget(self.stream_player,0,0)
+			stream_title_label=QLabel(self.claim_container)
+			stream_title_label.setText(claim["value"]["title"])
+			claim_container_layout.addWidget(stream_title_label,1,0)
 		elif claim["value_type"]=="channel":
 			#probably channel, i think
 			self.current_channel=ChannelWidget(claim)
