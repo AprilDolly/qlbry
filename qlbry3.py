@@ -37,7 +37,10 @@ class FunctionAsQThread(QThread):
 		self.function=function
 		self.args=args
 	def run(self):
-		result=(self.function(*self.args),)
+		try:
+			result=(self.function(*self.args),)
+		except Exception as e:
+			result=(e,)
 		self.function_complete.emit(result)
 
 class IteratorAsQThread(QThread):
@@ -305,6 +308,10 @@ class LBRYClient(QMainWindow):
 		else:
 			self.initialize_main_widgets()
 	def on_lbry_start_thread_complete(self,args):
+		if isinstance(args[0],Exception):
+			print("lbrynet failed to start: " + str(args[0]))
+			exit(1)
+		
 		self.progress_bar_container.deleteLater()
 		self.initialize_main_widgets()
 	def initialize_main_widgets(self):
