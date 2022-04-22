@@ -117,7 +117,11 @@ class LBRY:
 		except FileNotFoundError:
 			return False
 	def start(self):
-		self.lbrynet_process=subprocess.Popen([self.lbrynet_name,'start'],stdout=PIPE,stderr=PIPE)
+		try:
+			self.lbrynet_process=subprocess.Popen([self.lbrynet_name,'start'],stdout=PIPE,stderr=PIPE)
+		except FileNotFoundError:
+			exit()
+		
 		while True:
 			line=self.lbrynet_process.stderr.readline().decode('utf-8')
 			print(line)
