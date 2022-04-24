@@ -287,35 +287,12 @@ class ChannelWidget(QWidget):
 		self.deleteLater()
 		
 class LBRYClient(QMainWindow):
-	def __init__(self,lbrynet_name="lbrynet",start_lbrynet=True):
+	def __init__(self,lbrynet):
 		super().__init__()
-		self.lbry=LBRY(lbrynet_name=lbrynet_name)
+		self.lbry=lbrynet
 		self.setWindowTitle("qlbry")
-		if start_lbrynet:
-			#progress bar and stuff
-			self.progress_bar_container=QWidget(self)
-			pb_layout=QVBoxLayout()
-			self.pb_label=QLabel(self.progress_bar_container)
-			self.pb_label.setText("Initializing lbrynet daemon, please wait")
-			pb_layout.addWidget(self.pb_label)
-			self.pb=QProgressBar(self.progress_bar_container)
-			self.pb.setMaximum(0)
-			self.pb.setMinimum(0)
-			pb_layout.addWidget(self.pb)
-			self.progress_bar_container.setLayout(pb_layout)
-			self.setCentralWidget(self.progress_bar_container)
-			self.lbry_start_thread=FunctionAsQThread(self.lbry.start,parent=self)
-			self.lbry_start_thread.function_complete.connect(self.on_lbry_start_thread_complete)
-			self.lbry_start_thread.start()
-		else:
-			self.initialize_main_widgets()
-	def on_lbry_start_thread_complete(self,args):
-		if isinstance(args[0],Exception):
-			print("lbrynet failed to start: " + str(args[0]))
-			exit(1)
-		
-		self.progress_bar_container.deleteLater()
 		self.initialize_main_widgets()
+
 	def initialize_main_widgets(self):
 		self.main_container=QWidget(self)
 		self.setCentralWidget(self.main_container)
@@ -446,7 +423,31 @@ async def main():
 
 	QApplication.instance().aboutToQuit.connect(stop_running)
 
-	window = LBRYClient(os.getenv("APPDIR", os.getcwd()) + "/lbrynet")
+	lbrynet_daemon = LBRY(os.getenv("APPDIR", os.getcwd()) + "/lbrynet")
+	
+	pb_window = QWidget()
+	pb_layout = QVBoxLayout()
+
+	pb_label = QLabel(pb_window)
+	pb_label.setText("Starting lbrynet daemon, please wait...")
+	pb_layout.addWidget(pb_label)
+
+	pb = QProgressBar(pb_window)
+	pb.setMinimum(0)
+	pb.setMaximum(0)
+	pb_layout.addWidget(pb)
+
+	pb_window.setLayout(pb_layout)
+	pb_window.show()
+
+	try:
+		await lbrynet_daemon.start()
+	except FileNotFoundError as e:
+		print("Could not start lbrynet daemon:", e)
+		return
+
+	pb_window.deleteLater()
+	window = LBRYClient(lbrynet_daemon)
 	window.show()
 	
 	while running:
