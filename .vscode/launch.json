@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/qlbry3.py",
             "env": {
-                "LBRYNET_PATH": "${workspaceFolder}/lbrynet",
+                "APPDIR": "${workspaceFolder}",
             },
             "console": "integratedTerminal",
             "justMyCode": true
