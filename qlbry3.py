@@ -12,6 +12,8 @@ import sys
 import _thread as thread
 import numpy as np
 import os
+import asyncio
+import qasync
 
 def nothing(*args):
 	pass
@@ -435,13 +437,20 @@ class LBRYClient(QMainWindow):
 		self.claim_container.setLayout(claim_container_layout)
 		self.content_area.setWidget(self.claim_container)
 		self.claim_container.show()
+
+async def main():
+	running = True
+	def stop_running():
+		nonlocal running
+		running = False
+
+	QApplication.instance().aboutToQuit.connect(stop_running)
+
+	window = LBRYClient(os.getenv("APPDIR", os.getcwd()) + "/lbrynet")
+	window.show()
+	
+	while running:
+		await asyncio.sleep(0)
 		
 if __name__=="__main__":
-	if "APPDIR" in os.environ.keys():
-		lbrynet_name=lbrynet_name="{}/lbrynet".format(os.environ["APPDIR"])
-	else:
-		lbrynet_name="lbrynet"
-	app=QApplication(sys.argv)
-	window=LBRYClient(lbrynet_name)
-	window.show()
-	app.exec_()
+	qasync.run(main())
