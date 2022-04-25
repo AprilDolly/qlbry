@@ -422,8 +422,10 @@ async def main():
 		running = False
 
 	QApplication.instance().aboutToQuit.connect(stop_running)
-
-	lbrynet_daemon = LBRY(os.getenv("APPDIR", os.getcwd()) + "/lbrynet")
+	d_path=os.getenv("APPDIR", os.getcwd()) + "/lbrynet"
+	if not os.path.exists(os.getenv("APPDIR", os.getcwd()) + "/lbrynet"):
+		d_path="lbrynet"
+	lbrynet_daemon = LBRY(d_path)
 	
 	pb_window = QWidget()
 	pb_layout = QVBoxLayout()
