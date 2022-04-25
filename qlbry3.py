@@ -444,7 +444,7 @@ async def main():
 		await lbrynet_daemon.start()
 	except FileNotFoundError as e:
 		print("Could not start lbrynet daemon:", e)
-		return
+		exit(1)
 
 	pb_window.deleteLater()
 	window = LBRYClient(lbrynet_daemon)
