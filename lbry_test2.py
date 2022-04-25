@@ -6,7 +6,6 @@ from subprocess import DEVNULL,PIPE
 import json
 from json.decoder import JSONDecodeError
 import random
-import asyncio
 
 class Account:
 	def __init__(self,dic,lbry):
@@ -104,21 +103,32 @@ class Claim(dict):
 class LBRY:
 	def __init__(self,lbrynet_name="lbrynet",*args,**kwargs):
 		self.lbrynet_name=lbrynet_name
+		self.lbrynet_exists=self.test_lbrynet()
 		self.resolved_claim_data={}
 		self.resolved_claims={}
-
-	async def start(self):
+	def test_lbrynet(self):
+		try:
+			cmd_process=subprocess.Popen([self.lbrynet_name,"status"],stdout=PIPE,stderr=PIPE)
+			out=cmd_process.stdout.read().decode('utf-8')
+			if "Could not connect to daemon. Are you sure it's running?" in out:
+				return False
+			else:
+				return True
+		except FileNotFoundError:
+			return False
+	def start(self):
 		self.lbrynet_process=subprocess.Popen([self.lbrynet_name,'start'],stdout=PIPE,stderr=PIPE)
-		await asyncio.sleep(0.5)
 		
 		while True:
-			if self.lbrynet_command("status")["is_running"]:
-				break
-			else:
-				await asyncio.sleep(0)
-
+			line=self.lbrynet_process.stderr.readline().decode('utf-8')
+			print(line)
+			if 'Done setting up file manager' in line:
+				return
+			elif "finished shutting down" in line:
+				return
 	def stop(self):
 		self.lbrynet_command('stop')
+		
 		
 	def get_channel_claims(self,channel):
 		if type(channel)==str:
@@ -251,5 +261,3 @@ if __name__=='__main__':
 	lbry.test_lbrynet()
 	for r in lbry.search_continuously("reallygraceful"):
 		pass#print(r["name"])
-		
-	
